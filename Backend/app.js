@@ -1,6 +1,8 @@
 const express = require('express')
-
 const mongoose = require('mongoose');
+
+const userRoutes = require('./routes/userRoutes');
+const bookRoutes = require('./routes/bookRoutes')
 
 mongoose.connect('mongodb+srv://sasa:MonVieuxGrimoire@atlascluster.izzodwm.mongodb.net/?retryWrites=true&w=majority',
   { useNewUrlParser: true,
@@ -17,31 +19,8 @@ app.use((req, res, next) => {
   next();
 });
 
-app.post('/api/books', (req, res, next) => {
-  console.log(req.body);
-  res.status(201).json({
-    message:'objet créé!'
-  });
-});
 
-app.get('/api/books', (req, res, next)=>{
-  const books = [
-    {userId : String,
-    title : String ,
-    author : String ,
-    imageUrl : String ,
-    year: Number ,
-    genre: String ,
-    ratings : [
-    {
-    userId : String ,
-    grade : Number ,
-    }
-    ] ,
-    averageRating : Number ,
-  },
-  ];
-  res.status(200).json(books);
-});
+app.use('/api/books', bookRoutes)
+app.use('/api/auth', userRoutes);
 
 module.exports = app;
