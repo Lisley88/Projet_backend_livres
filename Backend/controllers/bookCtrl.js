@@ -1,5 +1,5 @@
 const Book = require('../models/book');
-const fs = require('fs');
+const fs = require('fs'); //The File System module: Read files
 
 exports.getAllBooks = (req, res, next) => {
     Book.find()
@@ -13,7 +13,7 @@ exports.getAllBooks = (req, res, next) => {
         });
       }
     );
-  };
+};
 
 exports.getOneBook = (req, res, next) => {
     Book.findOne({
@@ -31,32 +31,31 @@ exports.getOneBook = (req, res, next) => {
         });
       }
     );
-  };
+};
 
-  exports.getBestBooks = (req, res, next) => {
+exports.getBestBooks = (req, res, next) => {
 
-  }
+}
 
-  exports.createBook = (req, res, next) => {
+exports.createBook = (req, res, next) => {
     const bookObject = JSON.parse(req.body.book);
     delete bookObject._id;
     delete bookObject._userId;
     const book = new Book({
         ...bookObject,
         userId: req.auth.userId,
-        imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
+        imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`,
     });
-
     book.save()
-      .then(() => { res.status(201).json({message: 'Objet enregistré !'})})
-      .catch(error => { res.status(400).json( { error })})
- };
+        .then(() => { res.status(201).json({message: 'Livre enregistré !'})})
+        .catch((error) => { res.status(400).json( { error })})
+};
 
- exports.rateBook = (req, res, next) => {
+exports.rateBook = (req, res, next) => {
 
 
- }
- 
+}
+
 exports.modifyBook = (req, res, next) => {
     const bookObject = req.file ? {
         ...JSON.parse(req.body.book),
@@ -77,7 +76,7 @@ exports.modifyBook = (req, res, next) => {
         .catch((error) => {
             res.status(400).json({ error });
         });
- };
+};
 
 exports.deleteBook = (req, res, next) => {
     Book.findOne({ _id: req.params.id})
