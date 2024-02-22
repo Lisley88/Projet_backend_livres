@@ -1,5 +1,6 @@
 const bcrypt = require('bcrypt')
-const User = require ('../models/User')
+const User = require ('../models/User');
+const jwt = require('jsonwebtoken');
 // La fonction signup pour l'enregistrement de nouveaux utilisateurs.
 exports.signup = (req, res, next)=> {
     //la fonction de hachage de bcrypt dans notre mot de passe et lui demandons de « saler » le mot de passe 10 fois. 
@@ -7,7 +8,7 @@ exports.signup = (req, res, next)=> {
     .then(hash => {
         const user = new User({
           email: req.body.email,
-          password: hash
+          password: hash,
         });
         user.save() //enregistre dans le base de donnée en utilisant save()
           .then(() => res.status(201).json({ message: 'Utilisateur créé !' }))
@@ -18,16 +19,16 @@ exports.signup = (req, res, next)=> {
 
 //La fonction login pour connecter des utilisateurs existants
 exports.login = (req, res, next)=> {
-    User.findOne({email: req.body.email})
-    .then(user => {
-        if(user === null) {
+    User.findOne({ email: req.body.email })
+    .then((user) => {
+        if( !user ) {
             res.status(401).json({message:'Paire login/mot de passe incorrecte'})
         } else {
             //compare un string avec un hash pour, par exemple, vérifier si un mot de passe entré par l'utilisateur correspond à un hash sécurisé enregistré en base de données.
             bcrypt.compare(req.body.password, user.password)
             .then(valid => {
                 if(!valid) {
-                    return res.status(401).json({ message: 'Paire login/mot de passe incorrecte' });
+                 res.status(401).json({ message: 'Paire login/mot de passe incorrecte' });
                 } else {
                     res.status(200).json({
                         userId: user._id,
@@ -43,7 +44,7 @@ exports.login = (req, res, next)=> {
             .catch(error => res.status(500).json({ error }));
         }
     })
-    .catch(error=>{
+    .catch(error => {
         res.status(500).json({error});
     })
 };
