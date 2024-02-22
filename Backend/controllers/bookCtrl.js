@@ -33,9 +33,9 @@ exports.getOneBook = (req, res, next) => {
     );
   };
 
-exports.getBestBooks = (req, res, next) => {
+  exports.getBestBooks = (req, res, next) => {
 
- }
+  }
 
   exports.createBook = (req, res, next) => {
     const bookObject = JSON.parse(req.body.book);
@@ -48,16 +48,16 @@ exports.getBestBooks = (req, res, next) => {
     });
 
     book.save()
-    .then(() => { res.status(201).json({message: 'Objet enregistré !'})})
-    .catch(error => { res.status(400).json( { error })})
+      .then(() => { res.status(201).json({message: 'Objet enregistré !'})})
+      .catch(error => { res.status(400).json( { error })})
  };
 
  exports.rateBook = (req, res, next) => {
 
 
  }
-
- exports.modifyBook = (req, res, next) => {
+ 
+exports.modifyBook = (req, res, next) => {
     const bookObject = req.file ? {
         ...JSON.parse(req.body.book),
         imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
@@ -79,7 +79,7 @@ exports.getBestBooks = (req, res, next) => {
         });
  };
 
- exports.deleteBook = (req, res, next) => {
+exports.deleteBook = (req, res, next) => {
     Book.findOne({ _id: req.params.id})
         .then(book => {
             if (book.userId != req.auth.userId) {
@@ -96,6 +96,6 @@ exports.getBestBooks = (req, res, next) => {
         .catch( error => {
             res.status(500).json({ error });
         });
- };
+};
 
  
