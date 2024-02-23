@@ -21,14 +21,14 @@ exports.signup = (req, res, next)=> {
 exports.login = (req, res, next)=> {
     User.findOne({ email: req.body.email })
     .then((user) => {
-        if( !user ) {
-            res.status(401).json({message:'Paire login/mot de passe incorrecte'})
+        if(!user) {
+            res.status(401).json({message:'Utilisateur non trouvé !'})
         } else {
             //compare un string avec un hash pour, par exemple, vérifier si un mot de passe entré par l'utilisateur correspond à un hash sécurisé enregistré en base de données.
             bcrypt.compare(req.body.password, user.password)
             .then(valid => {
                 if(!valid) {
-                 res.status(401).json({ message: 'Paire login/mot de passe incorrecte' });
+                 res.status(401).json({ message: 'Mot de passe incorrecte' });
                 } else {
                     res.status(200).json({
                         userId: user._id,
