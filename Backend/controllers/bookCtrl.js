@@ -34,7 +34,9 @@ exports.getOneBook = (req, res, next) => {
 };
 
 exports.getBestBooks = (req, res, next) => {
-
+  Book.find().sort({ rating: -1 }).limit(3)
+    .then(bestBooks => { res.status(200).json(bestBooks);})  
+    .catch(error => res.status(400).json({ error }));
 }
 
 exports.createBook = (req, res, next) => {
@@ -52,8 +54,39 @@ exports.createBook = (req, res, next) => {
 };
 
 exports.rateBook = (req, res, next) => {
+    const newRate = req.body;
+
+    Book.findOne({ _id: req.params.id})
+    .then(book =>{
+      if (ratings.some((rating) => rating.userId === newRate.userId)) {
+        return res
+          .status(400)
+          .json({ message: "vous ne pouvez notez qu'une seule fois" })
+      }
+
+      const newRating = { userId: newRate.userId, grade: newRate.rating }
+      ratings.push(newRating)
+
+      const sum = ratings.reduce((accumulator, rating) => {
+        return accumulator + rating.grade
+      }, 0)
 
 
+      let averageRating = sum / ratings.length
+      book.averageRating = averageRating.toFixed(1)
+
+      book
+        .save()
+        .then(() => res.status(200).json(book))
+        .catch((error) => {
+          res.status(400).json({ error })
+        })
+    })
+    .catch((error) => {
+      res.status(400).json({
+        error,
+      })
+    })
 }
 
 exports.modifyBook = (req, res, next) => {
