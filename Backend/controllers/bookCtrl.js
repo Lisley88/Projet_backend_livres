@@ -39,7 +39,7 @@ exports.getBestBooks = (req, res, next) => {
     .catch(error => res.status(400).json({ error }));
 }
 
-exports.createBook = (req, res, next) => {
+exports.createBook = (req, res, next) => {    
     const bookObject = JSON.parse(req.body.book);
     delete bookObject._id;
     delete bookObject._userId;
@@ -51,43 +51,44 @@ exports.createBook = (req, res, next) => {
     book.save()
         .then(() => { res.status(201).json({message: 'Livre enregistré !'})})
         .catch((error) => { res.status(400).json( { error })})
-};
+}
 
 exports.rateBook = (req, res, next) => {
-    const newRate = req.body;
 
-    Book.findOne({ _id: req.params.id})
-    .then(book =>{
-      if (ratings.some((rating) => rating.userId === newRate.userId)) {
-        return res
-          .status(400)
-          .json({ message: "vous ne pouvez notez qu'une seule fois" })
-      }
+  Book.findOne({ _id: req.params.id })
+		.then(book => {
 
-      const newRating = { userId: newRate.userId, grade: newRate.rating }
-      ratings.push(newRating)
+			const bookrated = book.ratings.find(rating => rating.userId === req.auth.userId);
 
-      const sum = ratings.reduce((accumulator, rating) => {
-        return accumulator + rating.grade
-      }, 0)
+			if (!bookrated) {
+				book.ratings.push(
+          { userId: req.auth.userId, 
+            grade: req.body.rating }
+        );
 
+				const ratings = book.ratings.map(rating => rating.grade);
 
-      let averageRating = sum / ratings.length
-      book.averageRating = averageRating.toFixed(1)
+				let averageRating =
+					ratings.reduce((previous, current) => {
+						return previous + current;
+					}, 0) / ratings.length;
+				averageRating = averageRating.toFixed(1);
 
-      book
-        .save()
-        .then(() => res.status(200).json(book))
-        .catch((error) => {
-          res.status(400).json({ error })
-        })
-    })
-    .catch((error) => {
-      res.status(400).json({
-        error,
-      })
-    })
-}
+				Book.findByIdAndUpdate(
+					{ _id: req.params.id },
+					{ ratings: book.ratings, averageRating: averageRating },
+					{ new: true }
+				)
+					.then(book => res.status(200).json(book))
+					.catch(error => res.status(401).json({ error }));
+			} else {
+				return res.status(400).json({ message: "Vous ne pouvez notez qu'une seule fois" });
+			}
+		})
+		.catch(error => {
+			return res.status(500).json({ error });
+		});
+};
 
 exports.modifyBook = (req, res, next) => {
     const bookObject = req.file ? {
@@ -129,5 +130,3 @@ exports.deleteBook = (req, res, next) => {
             res.status(500).json({ error });
         });
 };
-
- 
