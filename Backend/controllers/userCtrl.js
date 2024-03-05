@@ -1,8 +1,17 @@
 const bcrypt = require('bcrypt')
 const User = require ('../models/User');
 const jwt = require('jsonwebtoken');
+
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,20}$/;
 // La fonction signup pour l'enregistrement de nouveaux utilisateurs.
 exports.signup = (req, res, next)=> {
+    if (!emailRegex.test(req.body.email)) {
+        return res.status(410).json({message:"Email non conforme"})
+    }
+    if (!passwordRegex.test(req.body.password)) {
+        return res.status(410).json({message:"Mote de passe incorrect"})
+    }
     //la fonction de hachage de bcrypt dans notre mot de passe et lui demandons de « saler » le mot de passe 10 fois. 
     bcrypt.hash(req.body.password,10)
     .then(hash => {

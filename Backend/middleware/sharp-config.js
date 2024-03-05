@@ -8,7 +8,7 @@ const sharpImage = (req, res, next) => {
             .webp({ quality: 80 })
             .toFile(`images/${newFileName}`)
             .then(() => {
-                // Remplacer le fichier original
+                // Remplacer l'image origine
                 fs.unlink(req.file.path, () => {
                     req.file.path = `images/${newFileName}`;
                     req.file.filename = newFileName;
