@@ -1,3 +1,10 @@
+Créez un fichier .env à la racine et copiez / collez y ceci :
+USER = "sasa"
+PASSWORD = "MonVieuxGrimoire"
+DB_DOMAIN = "atlascluster.izzodwm.mongodb.net/?retryWrites=true&w=majority"
+SECRET_TOKEN = RANDOM_TOKEN_SECRET
+
+
 Organisme de Formation: Openclassrooms
 Projet 7 : Développez le back-end en Node.JS d'un site de notation de livres
 
