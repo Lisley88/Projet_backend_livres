@@ -1,6 +1,8 @@
+// Import du package http avec require
 const http = require("http");
 const app = require("./app");
 
+//Ajoute la normalisation de port, la fonction normalizePort renvoie un port valide
 const normalizePort = (val) => {
     const port = parseInt(val, 10);
 
@@ -15,6 +17,7 @@ const normalizePort = (val) => {
 const port = normalizePort(process.env.PORT || "4000");
 app.set("port", port);
 
+// Recherche les erreurs
 const errorHandler = (error) => {
     if (error.syscall !== "listen") {
         throw error;
@@ -46,4 +49,5 @@ server.on("listening", () => {
     console.log("Listening on " + bind);
 });
 
+//Enregistre un écouteur d'évènements pour consigner le port
 server.listen(port);

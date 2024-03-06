@@ -49,7 +49,9 @@ exports.createBook = (req, res, next) => {
     const book = new Book({
         ...bookObject,
         userId: req.auth.userId,
-        imageUrl: `${req.protocol}://${req.get("host")}/images/${req.file.filename}`,
+        imageUrl: `${req.protocol}://${req.get("host")}/images/${
+            req.file.filename
+        }`,
     });
     book.save()
         .then(() => {
@@ -61,6 +63,13 @@ exports.createBook = (req, res, next) => {
 };
 
 exports.rateBook = (req, res, next) => {
+    //Vérifier la note entre 0 et 5
+    if (req.body.rating < 0 || req.body.rating > 5) {
+        return res
+            .status(400)
+            .json({ message: "La note doit être entre 0 et 5" });
+    }
+
     Book.findOne({ _id: req.params.id })
         .then((book) => {
             const bookrated = book.ratings.find(
@@ -89,11 +98,9 @@ exports.rateBook = (req, res, next) => {
                     .then((book) => res.status(200).json(book))
                     .catch((error) => res.status(401).json({ error }));
             } else {
-                return res
-                    .status(400)
-                    .json({
-                        message: "Vous ne pouvez notez qu'une seule fois",
-                    });
+                return res.status(400).json({
+                    message: "Vous ne pouvez notez qu'une seule fois",
+                });
             }
         })
         .catch((error) => {
@@ -105,35 +112,39 @@ exports.modifyBook = (req, res, next) => {
     const bookObject = req.file
         ? {
               ...JSON.parse(req.body.book),
-              imageUrl: `${req.protocol}://${req.get("host")}/images/${req.file.filename}`,
+              imageUrl: `${req.protocol}://${req.get("host")}/images/${
+                  req.file.filename
+              }`,
           }
         : { ...req.body };
 
     delete bookObject._userId;
-    Book.findOne({ _id: req.params.id })
-    .then((book) => {
+    Book.findOne({ _id: req.params.id }).then((book) => {
         if (book.userId != req.auth.userId) {
             res.status(401).json({ message: "Non autorization" });
         } else {
-          let fileName='';
-        if (req.file) {
-             fileName = book.imageUrl.split("/images/")[1];
+            let fileName = "";
+            if (req.file) {
+                fileName = book.imageUrl.split("/images/")[1];
+            }
+            Book.updateOne(
+                { _id: req.params.id },
+                { ...bookObject, _id: req.params.id }
+            )
+                .then(() => {
+                    fs.unlink(`images/${fileName}`, (error) => {
+                        if (error) console.log(err);
+                    });
+                    res.status(200).json({ message: "Objet modifié !" });
+                })
+                .catch((error) => {
+                    // Si on a une erreur sur l'update, on supprime la nouvelle image.
+                    fs.unlink(`images/${req.file.filename}`, (error) => {
+                        if (error) console.log(err);
+                    });
+                    res.status(401).json({ error });
+                });
         }
-        Book.updateOne({ _id: req.params.id }, { ...bookObject, _id: req.params.id})
-        .then(() => {
-          fs.unlink(`images/${fileName}`, error => {
-            if (error) console.log(err);
-          });
-          res.status(200).json({ message: 'Objet modifié !' });
-        })
-        .catch(error => {
-          // Si on a une erreur sur l'update, on supprime la nouvelle image.
-          fs.unlink(`images/${req.file.filename}`, error => {
-            if (error) console.log(err);
-          });
-          res.status(401).json({ error });
-        });
-      }
     });
 };
 

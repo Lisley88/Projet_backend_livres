@@ -2,7 +2,10 @@ const bcrypt = require('bcrypt')
 const User = require ('../models/User');
 const jwt = require('jsonwebtoken');
 
+// L'adresse mail doit être au format string@string.string
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Le mot de passe doit faire entre 8 et 20 caractères, il doit contenir
+// au minimum un chiffre, une majuscule et une minuscule
 const passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,20}$/;
 // La fonction signup pour l'enregistrement de nouveaux utilisateurs.
 exports.signup = (req, res, next)=> {
@@ -43,7 +46,7 @@ exports.login = (req, res, next)=> {
                         userId: user._id,
                         token: jwt.sign(
                             { userId: user._id },
-                           'RANDOM_TOKEN_SECRET', //clé secret
+                            process.env.SECRET_TOKEN, //clé secret
                            { expiresIn: '24h' }   //configuration d'expiration
 
                         )
