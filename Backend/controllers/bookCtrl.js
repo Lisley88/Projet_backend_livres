@@ -1,6 +1,7 @@
 const Book = require("../models/Book");
 const fs = require("fs"); //The File System module: Read files
 
+//Récupérer tous les livres dans la base de donnée
 exports.getAllBooks = (req, res, next) => {
     Book.find()
         .then((books) => {
@@ -13,6 +14,7 @@ exports.getAllBooks = (req, res, next) => {
         });
 };
 
+// Récupérer un livre précis dans la BDD
 exports.getOneBook = (req, res, next) => {
     Book.findOne({
         _id: req.params.id,
@@ -27,6 +29,7 @@ exports.getOneBook = (req, res, next) => {
         });
 };
 
+// Récupérer les 3 livres les mieux notés dans la BDD
 exports.getBestBooks = (req, res, next) => {
     Book.find()
         .sort({ rating: -1 })
@@ -37,33 +40,59 @@ exports.getBestBooks = (req, res, next) => {
         .catch((error) => res.status(400).json({ error }));
 };
 
+// Ajouter un nouveau livre
 exports.createBook = (req, res, next) => {
+    //Récupération des données des livre de la requête
     const bookObject = JSON.parse(req.body.book);
+    //Si l'utilisateur n'a pas noté le livre, videz le tableau (utile pour que l'utilisateur puisse encore noter son livre plus tard)
+    // if (bookObject.ratings[0].grade === 0) {
+    //     bookObject.ratings = [];
+    // }
 
+    //La notation est obligatoire quand nous créons notre livre
     if (bookObject.ratings[0].grade === 0) {
-        return res.status(400).json({ message: "La notation est obligatoire" });
+        // On supprime l'image des fichiers locaux et le livre de la BDD
+        fs.unlink(`images/${req.file.filename}`, (error) => {
+            if (error) console.log(error);
+        });
+        res.status(401).json({ error });
     }
 
+    //On supprime l'id et le userId envoyés par le front-end : on ne fait pas confiance au front-end
     delete bookObject._id;
     delete bookObject._userId;
+
+    //Créé un nouvel objet Book avec les informations du formulaire par le front-end
     const book = new Book({
-        ...bookObject,
+        ...bookObject, //Syntaxe spread pour inclure les proprietés de l'objet bookobject dansl'instance
         userId: req.auth.userId,
         imageUrl: `${req.protocol}://${req.get("host")}/images/${
             req.file.filename
         }`,
+        averageRating: bookObject.ratings[0].grade,
     });
-    book.save()
+
+    book.save() ////On enregistre ce nouveau livre dans la base de donnée
         .then(() => {
             res.status(201).json({ message: "Livre enregistré !" });
         })
         .catch((error) => {
-            res.status(400).json({ error });
+            // Si il y a une erreur dans la requête, on supprime l'image
+            fs.unlink(`images/${req.file.filename}`, (error) => {
+                if (error) console.log(error);
+            });
+            res.status(401).json({ error });
         });
 };
 
+//Noter un livre
 exports.rateBook = (req, res, next) => {
-    //Vérifier la note entre 0 et 5
+    const id = req.params.id;
+    if (id == null || id == "undefined") {
+        res.status(400).send("ID du livre est undefined");
+        return;
+    }
+    //Vérifier la note doit être entre 0 et 5
     if (req.body.rating < 0 || req.body.rating > 5) {
         return res
             .status(400)
@@ -108,65 +137,85 @@ exports.rateBook = (req, res, next) => {
         });
 };
 
+//Modifier le livre
 exports.modifyBook = (req, res, next) => {
     const bookObject = req.file
         ? {
+              ////Parse les données JSON de req.body.book
               ...JSON.parse(req.body.book),
+              // // Construction de l'URL de l'image
               imageUrl: `${req.protocol}://${req.get("host")}/images/${
                   req.file.filename
               }`,
           }
-        : { ...req.body };
+        : { ...req.body }; // si aucun fichier n'est présent dans la requête=>syntaxe de spread (...) pour créer une copie de toutes les propriétés de req.body
 
+    //On supprime le userId envoyé par le front pour sécuriser l'app, et on utilisera
+    //le userId retourné par notre middleware d'authentification qui se base sur le token
     delete bookObject._userId;
-    Book.findOne({ _id: req.params.id }).then((book) => {
-        if (book.userId != req.auth.userId) {
-            res.status(401).json({ message: "Non autorization" });
-        } else {
-            let fileName = "";
-            if (req.file) {
-                fileName = book.imageUrl.split("/images/")[1];
-            }
-            Book.updateOne(
-                { _id: req.params.id },
-                { ...bookObject, _id: req.params.id }
-            )
-                .then(() => {
-                    fs.unlink(`images/${fileName}`, (error) => {
-                        if (error) console.log(err);
-                    });
-                    res.status(200).json({ message: "Objet modifié !" });
-                })
-                .catch((error) => {
-                    // Si on a une erreur sur l'update, on supprime la nouvelle image.
-                    fs.unlink(`images/${req.file.filename}`, (error) => {
-                        if (error) console.log(err);
-                    });
-                    res.status(401).json({ error });
-                });
-        }
-    });
-};
 
-exports.deleteBook = (req, res, next) => {
     Book.findOne({ _id: req.params.id })
         .then((book) => {
+            //Vérifie que l'utilisateur est bien le propriétaire du livre
             if (book.userId != req.auth.userId) {
                 res.status(401).json({ message: "Non autorization" });
             } else {
+                let fileName = "";
+                // Si une nouvelle image est envoyée, on supprime l'ancienne image des fichiers locaux
+                if (req.file) {
+                    fileName = book.imageUrl.split("/images/")[1];
+                }
+                //Mettre à jour le livre dans la BDD
+                Book.updateOne(
+                    { _id: req.params.id },
+                    { ...bookObject, _id: req.params.id }
+                )
+                    .then(() => {
+                        fs.unlink(`images/${fileName}`, (error) => {
+                            if (error) console.log(error);
+                        });
+                        res.status(200).json({ message: "Livre modifié !" });
+                    })
+                    .catch((error) => {
+                        //Si on a une erreur sur l'update, on supprime la nouvelle image.
+                        fs.unlink(`images/${req.file.filename}`, (error) => {
+                            if (error) console.log(error);
+                        });
+                        res.status(401).json({ error });
+                    });
+            }
+        })
+        .catch((error) => res.status(400).json({ error }));
+};
+
+//Supprimer un livre
+exports.deleteBook = (req, res, next) => {
+    //Rechercher le livre dans la BDD
+    Book.findOne({ _id: req.params.id })
+        .then((book) => {
+            //Vérifier que l'utilisateur est bien le propriétaire du livre
+            if (book.userId != req.auth.userId) {
+                res.status(401).json({ message: "Non autorization" }); //Si ce n'est pas le cas, on renvoie une erreur 401
+            } else {
                 const filename = book.imageUrl.split("/images/")[1];
+                // On supprime l'image des fichiers locaux et le livre de la BDD
                 fs.unlink(`images/${filename}`, () => {
                     Book.deleteOne({ _id: req.params.id })
                         .then(() => {
                             res.status(200).json({
-                                message: "Objet supprimé !",
+                                message: "Livre supprimé !",
                             });
                         })
-                        .catch((error) => res.status(401).json({ error }));
+                        .catch(() =>
+                            res
+                                .status(401)
+                                .json({ message: "La suppression à échoué !" })
+                        );
                 });
             }
         })
         .catch((error) => {
+            // Si le livre n'est pas trouvé dans la BDD, on renvoie une erreur 500
             res.status(500).json({ error });
         });
 };
