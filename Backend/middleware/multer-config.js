@@ -1,4 +1,4 @@
-//Importer multer
+//Importer multer: module pour gérer le téléchargement de fichiers dans les applications Express
 const multer = require('multer');
 
 const MIME_TYPES = {

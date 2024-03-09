@@ -1,9 +1,9 @@
 require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
-const path = require("path");
+const path = require("path");//module qui permet de créer, de modifier et de manipuler des chemins de fichiers
 const app = express();
-//// Import de nos routes
+// Import de nos routes
 const userRoutes = require("./routes/userRoutes");
 const bookRoutes = require("./routes/bookRoutes");
 
@@ -15,8 +15,8 @@ mongoose
     .then(() => console.log("Connexion à MongoDB réussie !"))
     .catch(() => console.log("Connexion à MongoDB échouée !"));
 
-// Nous permet de lire de lire les données que l'on va récupérer en les
-// "transformant" en objets javascript
+// Permet de lire les données que l'on va récupérer en les
+// transformant en objets javascript = "body-parser"
 app.use(express.json());
 
 //Gestion des CORS
@@ -26,6 +26,8 @@ app.use((req, res, next) => {
     //ajouter les headers mentionnés aux requêtes envoyées vers notre API (Origin , X-Requested-With , etc.)
     res.setHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content, Accept, Content-Type, Authorization");
     //envoyer des requêtes avec les méthodes ( GET ,POST...).
+    //HTTP PATCH est utilisée pour une mise à jour partielle d'une ressource
+    //HTTP OPTIONS est utilisée pour décrire les options de communication pour la ressource ciblée
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS");
     next();
 });

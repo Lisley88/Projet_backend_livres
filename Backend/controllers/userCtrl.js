@@ -37,7 +37,9 @@ exports.login = (req, res, next)=> {
         if(!user) {
             res.status(401).json({message:'Utilisateur non trouvé !'})
         } else {
-            //compare un string avec un hash pour, par exemple, vérifier si un mot de passe entré par l'utilisateur correspond à un hash sécurisé enregistré en base de données.
+            //compare un string avec un hash pour, par exemple, 
+            //vérifier si un mot de passe entré par l'utilisateur 
+            //correspond à un hash sécurisé enregistré en base de données.
             bcrypt.compare(req.body.password, user.password)
             .then(valid => {
                 if(!valid) {

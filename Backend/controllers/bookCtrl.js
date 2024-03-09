@@ -1,5 +1,5 @@
 const Book = require("../models/Book");
-const fs = require("fs"); //The File System module: Read files
+const fs = require("fs"); //The File System module: Read files -module pour effectuer des opérations dans l'organisation des fichiers
 
 //Récupérer tous les livres dans la base de donnée
 exports.getAllBooks = (req, res, next) => {
@@ -32,8 +32,8 @@ exports.getOneBook = (req, res, next) => {
 // Récupérer les 3 livres les mieux notés dans la BDD
 exports.getBestBooks = (req, res, next) => {
     Book.find()
-        .sort({ rating: -1 })
-        .limit(3)
+        .sort({ rating: -1 })  //Trie par ordre décroissant de la note moyenne
+        .limit(3)  //Limite le résultat aux 3 premiers livres
         .then((bestBooks) => {
             res.status(200).json(bestBooks);
         })
@@ -44,14 +44,10 @@ exports.getBestBooks = (req, res, next) => {
 exports.createBook = (req, res, next) => {
     //Récupération des données des livre de la requête
     const bookObject = JSON.parse(req.body.book);
-    //Si l'utilisateur n'a pas noté le livre, videz le tableau (utile pour que l'utilisateur puisse encore noter son livre plus tard)
-    // if (bookObject.ratings[0].grade === 0) {
-    //     bookObject.ratings = [];
-    // }
 
     //La notation est obligatoire quand nous créons notre livre
     if (bookObject.ratings[0].grade === 0) {
-        // On supprime l'image des fichiers locaux et le livre de la BDD
+        // On supprime l'image des fichiers locaux 
         fs.unlink(`images/${req.file.filename}`, (error) => {
             if (error) console.log(error);
         });
@@ -64,7 +60,7 @@ exports.createBook = (req, res, next) => {
 
     //Créé un nouvel objet Book avec les informations du formulaire par le front-end
     const book = new Book({
-        ...bookObject, //Syntaxe spread pour inclure les proprietés de l'objet bookobject dansl'instance
+        ...bookObject, //Syntaxe spread pour inclure les proprietés de l'objet bookobject dans l'instance
         userId: req.auth.userId,
         imageUrl: `${req.protocol}://${req.get("host")}/images/${
             req.file.filename
@@ -101,12 +97,13 @@ exports.rateBook = (req, res, next) => {
 
     Book.findOne({ _id: req.params.id })
         .then((book) => {
+            //Vérifier si l'utilisateur a déjà noté le livre
             const bookrated = book.ratings.find(
                 (rating) => rating.userId === req.auth.userId
             );
 
             if (!bookrated) {
-                book.ratings.push({
+                book.ratings.push({  //Ajouter la note
                     userId: req.auth.userId,
                     grade: req.body.rating,
                 });
@@ -117,8 +114,8 @@ exports.rateBook = (req, res, next) => {
                     ratings.reduce((previous, current) => {
                         return previous + current;
                     }, 0) / ratings.length;
-                averageRating = averageRating.toFixed(1);
-
+                averageRating = averageRating.toFixed(1);//Conversion en float et arrondi à une décimale
+                // On met à jour le livre dans la BDD
                 Book.findByIdAndUpdate(
                     { _id: req.params.id },
                     { ratings: book.ratings, averageRating: averageRating },
@@ -141,9 +138,9 @@ exports.rateBook = (req, res, next) => {
 exports.modifyBook = (req, res, next) => {
     const bookObject = req.file
         ? {
-              ////Parse les données JSON de req.body.book
+              //Parse les données JSON de req.body.book
               ...JSON.parse(req.body.book),
-              // // Construction de l'URL de l'image
+              //Construction de l'URL de l'image
               imageUrl: `${req.protocol}://${req.get("host")}/images/${
                   req.file.filename
               }`,
@@ -167,8 +164,8 @@ exports.modifyBook = (req, res, next) => {
                 }
                 //Mettre à jour le livre dans la BDD
                 Book.updateOne(
-                    { _id: req.params.id },
-                    { ...bookObject, _id: req.params.id }
+                    { _id: req.params.id }, //Garantit que l'id du livre reste inchangé dans la Base de données
+                    { ...bookObject, _id: req.params.id } //Argument qui specifie les nouvelles valeurs à mettre à jour
                 )
                     .then(() => {
                         fs.unlink(`images/${fileName}`, (error) => {
@@ -198,7 +195,7 @@ exports.deleteBook = (req, res, next) => {
                 res.status(401).json({ message: "Non autorization" }); //Si ce n'est pas le cas, on renvoie une erreur 401
             } else {
                 const filename = book.imageUrl.split("/images/")[1];
-                // On supprime l'image des fichiers locaux et le livre de la BDD
+                // On supprime l'image des fichiers locaux et le livre de la BDD en fonction de son ID
                 fs.unlink(`images/${filename}`, () => {
                     Book.deleteOne({ _id: req.params.id })
                         .then(() => {
